@@ -3,6 +3,7 @@ import httpx
 from app.models import ChatRequest, ChatResponse
 from app.proxy import LLMProxy
 from app.config import get_settings
+from app.embedding_service import EmbeddingService
 
 from contextlib import asynccontextmanager
 from redis.asyncio import ConnectionPool, Redis
@@ -18,6 +19,9 @@ async def lifespan(app: FastAPI):
         decode_responses=True
     )
     app.state.redis = Redis(connection_pool=pool)
+
+    # Embedding service
+    app.state.embedding_service = EmbeddingService()
     yield
     # shutdown
     await app.state.redis.aclose()
@@ -27,7 +31,7 @@ app = FastAPI(lifespan=lifespan)
 @app.post("/v1/chat")
 async def chat(request: ChatRequest, req: Request):
     settings = get_settings()
-    proxy = LLMProxy(settings, req.app.state.redis)
+    proxy = LLMProxy(settings, req.app.state.redis, req.app.state.embedding_service)
     try:
         return await proxy.resolve(request)
     except httpx.TimeoutException:

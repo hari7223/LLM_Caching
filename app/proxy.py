@@ -12,9 +12,10 @@ from app.models import CacheStatus, ChatResponse, ChatRequest
 
 class LLMProxy:
     
-    def __init__(self, settings, redis):
+    def __init__(self, settings, redis=None, embedding_service=None):
         self.settings = settings
         self.redis = redis
+        self.embedding_service = embedding_service
 
     async def resolve(self, request):
         start = time.perf_counter()
